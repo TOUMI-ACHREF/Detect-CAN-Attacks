@@ -1,0 +1,469 @@
+<html>
+    <head>
+        <title>Cyber Security</title>
+        <link rel="stylesheet" href="styleC.css">
+    </head>
+     <body>
+        <div class="sky" style="position: relative;  ">
+             <div class="highway"></div>
+             <div class="city"></div>
+
+             <div class="hacker-container">
+               <img src="hacker-image.jpg" alt="Hacker Image" class="image-hacker">
+
+               <label id="hacker-lab" style="color:darkred;"></label>
+               <!--
+               <img src="loading-gif.gif" alt="Hacker Gif" id="load_hacker" style="position: relative; margin-top: 10%; margin-left: 10%; max-width:40px; max-height:40px;">
+               -->
+
+             </div>
+             
+             <!-- Message icon (hidden until animation) -->
+             <img src="message-icon-ordinal.png" alt="Message" class="message" id="message">
+
+         <!-- Popup Modal for inspection (hidden initially) -->
+         <div id="inspectionModal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border: 1px solid black; z-index: 1000; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);">
+            <h3 style="color:darkcyan">Détailles du Message</h3>
+            <table id="messageTable">
+               <!-- Table Content -->
+            </table>
+            <button id="closeButton" onclick="closeModal()">X</button>
+         </div>
+
+         <!-- Optional Background Overlay to Dim Page when Modal is Open -->
+         <div id="modalOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 999;"></div>
+
+
+            <div class="central-div" id="centralDiv">
+            <h2>État de la voiture</h2>
+            <label class="status-label" style="display: none;">Status: Upcoming message</label>
+            <div class="message-receptacle" id="messageReceptacle"></div>
+            <div id="outdiv" style="display: flex; justify-content: center;"></div>
+            <label id="outputLabel" class="output-label"></label> <!-- Label to show output -->
+            </div>
+
+            <div class="car">
+               <img src="car.png">
+            </div>
+            <div class="wheel">
+               <img src="wheel.png" class="back-wheel">
+               <img src="wheel.png" class="front-wheel">
+            </div>
+
+            <div class="simulation-container">
+               <h2>Simuler un attaque CAN</h2>
+               <!-- Standard Attack Form -->
+               <div id="standardAttackForm">
+                   <select id="attackSelect">
+                       <option value="ordinal">Message ordinale</option>
+                       <option value="attack1">Attaque Dos</option>
+                       <option value="attack2">Attaque de Fuzzing</option>
+                       <option value="attack3">Attaque par Usurpation d'Identité</option>
+                   </select>
+                   <button onclick="animateMessage()">Simuler</button>
+                   <!-- Switch button to custom attack -->
+                   <button onclick="showCustomAttackInput()">Passer à l'attaque personnalisée</button>
+               </div>
+           
+               <!-- Custom Attack Form (Initially Hidden) -->
+               <div id="customAttackInputs" hidden="hidden" style="z-index: 10;">
+                   <h3>Entrez les données de l'attaque personnalisée</h3>
+                   <div class="input-group">
+                       <label for="timestamp">Timestamp</label>
+                       <input type="number" id="timestamp" placeholder="Exemple: 385.07192">
+                   </div>
+                   <div class="input-group">
+                       <label for="id">ID</label>
+                       <input type="number" id="id" placeholder="Exemple: 1306">
+                   </div>
+                   <div class="input-group">
+                       <label for="dlco">DLCO</label>
+                       <input type="number" id="dlco" placeholder="Exemple: 0">
+                   </div>
+                   <div class="input-group">
+                       <label for="dlc1">DLC1</label>
+                       <input type="number" id="dlc1" placeholder="Exemple: 3">
+                   </div>
+                   <div class="input-group">
+                       <label for="dlc2">DLC2</label>
+                       <input type="number" id="dlc2" placeholder="Exemple: 0">
+                   </div>
+                   <div class="input-group">
+                       <label for="dlc3">DLC3</label>
+                       <input type="number" id="dlc3" placeholder="Exemple: 0">
+                   </div>
+                   <div class="input-group">
+                       <label for="dlc4">DLC4</label>
+                       <input type="number" id="dlc4" placeholder="Exemple: 0">
+                   </div>
+                   <div class="input-group">
+                       <label for="dlc5">DLC5</label>
+                       <input type="number" id="dlc5" placeholder="Exemple: 0">
+                   </div>
+                   <div class="input-group">
+                     <label for="dlc6">DLC6</label>
+                     <input type="number" id="dlc6" placeholder="Exemple: 0">
+                   </div>
+                   <div class="input-group">
+                     <label for="dlc7">DLC7</label>
+                     <input type="number" id="dlc7" placeholder="Exemple: 0">
+                   </div>
+
+                   <button onclick="submitCustomAttack()">Simuler l'attaque personnalisée</button>
+                   <!-- Return Button to go back to the standard attacks -->
+                   <button onclick="returnToStandard()">Retour aux attaques standards</button>
+               </div>
+           </div>
+            
+         
+
+
+         </div>
+
+
+        </div>
+
+        <script>
+         var counter =0;
+         const observations = {
+            "attack1": [116.111738, 608, 5, 24, 0, 48, 1, 139, 93, 39],
+            "ordinal": [752.155401, 1306, 0, 3, 0, 0, 0, 0, 0, 0],
+            "attack2": [230.283327, 898, 64, 154, 15, 0, 0, 0, 0, 12],
+            "attack3": [1481193085.080826, 272, 224, 60, 48, 489, 0, 0, 0, 0]
+         };
+         let customAttackData = null;
+         let lastObservation = null;
+
+         async function getPrediction() {
+            const select = document.getElementById('attackSelect');
+            const selectedValue = select.value;
+            const observation = observations[selectedValue];
+            const outputLabel = document.getElementById('outputLabel');
+            const outputDiv = document.getElementById('outdiv');
+
+            if (observation) {  // Ensure an observation is selected
+                const response = await fetch('http://localhost:5000/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ features: observation })
+                });
+                const result = await response.json();
+                console.log(result.prediction);
+                // Display the output based on result from python server
+
+                //remove the loading GIF
+                outputDiv.removeChild(document.getElementById('im'));
+
+                if (result.prediction) {
+                  if (result.prediction === 'Ordinale message') {
+                     outputLabel.innerHTML = 'Message ordinale recu!';
+                     outputLabel.className = "success"
+
+                  } else {
+                     outputLabel.innerHTML = `Attaque détecté: ${result.prediction}`;
+                     outputLabel.className = "attack"
+
+                  }
+               } else {
+                  outputLabel.innerHTML = 'Error: On a pas recu la prédiction.';
+                  outputLabel.className = "output-label"
+               }
+            } else {
+                outputLabel.textContent = "Vous devez selectionner un type de message.";
+                outputLabel.className = "output-label"; 
+            }
+            lastObservation = observation;
+        }
+
+        function wait(ms){
+         return new Promise(a => setTimeout(a, ms));
+        }
+
+        async function animateMessage() {
+         counter += 1;
+         const select = document.getElementById('attackSelect');
+         const message = document.getElementById('message');
+         const centralDiv = document.getElementById('centralDiv');
+         const messageReceptacle = document.getElementById('messageReceptacle');
+         const outputLabel = document.getElementById('outputLabel');
+         const outputDiv = document.getElementById('outdiv');
+
+         
+         const hackerLabel = document.getElementById('hacker-lab');
+
+         outputLabel.innerHTML = '';
+
+         // Remove the previous message icon if it exists
+         if (counter > 1 && document.getElementById('im1')) {
+            messageReceptacle.removeChild(document.getElementById('im1'));
+         }
+
+         // Set the correct icon based on the selected attack type
+         if(select.value === "ordinal")
+            message.setAttribute("src", "message-icon-ordinal.png");
+         else{
+            message.setAttribute("src", "message-icon-hacked.png");
+            //document.getElementById("load_hacker").removeAttribute('visibility');
+            hackerLabel.innerHTML = 'Le pirate prepare son attaque...';
+            hackerLabel.className ="output-label"
+            //message.setAttribute("src", select.value === "ordinal" ? "message-icon-ordinal.png" : "message-icon-hacked.png");
+            message.style.opacity = '0';  // Ensure it's fully visible before moving
+            
+            message.style.transform = `translate(${0}px, ${0}px)`
+            await wait(2000);
+            hackerLabel.innerHTML = '';
+            //document.getElementById("load_hacker").setAttribute('visibility','hidden');
+         }
+   
+         
+
+            
+         // Reset the position, opacity, and transform properties to ensure the message starts from the top-left
+         message.style.position = 'static';  // Use static position (normal flow of the document)
+         message.style.left = '0px';  // Set top-left corner (0,0)
+         message.style.top = '0px';   // Set top-left corner (0,0)
+         message.style.transform = 'none'; // Clear any previous transformations
+         message.style.opacity = '1';  // Ensure it's fully visible before moving
+
+
+         void message.offsetWidth;
+         outputLabel.style.display = 'block';
+
+         // Only animate to centralDiv for non-ordinal messages
+         if (select.value !== "ordinal") {
+            const centralRect = centralDiv.getBoundingClientRect();
+            const messageRect = message.getBoundingClientRect();
+
+            // Calculate translation distances
+            const translateX = centralRect.left + centralRect.width / 2 - (messageRect.left + messageRect.width / 2);
+            const translateY = centralRect.top + centralRect.height / 2 - (messageRect.top + messageRect.height / 2);
+
+            // Start the animation towards the central div
+            setTimeout(() => {
+                  message.style.transform = `translate(${translateX}px, ${translateY}px)`;
+
+                  // Insert message icon in the receptacle and show loading indicator after animation completes
+                  setTimeout(() => {
+                     messageReceptacle.innerHTML = '<img src="message-icon-hacked.png" id="im1" alt="Message"  onclick="inspectMessage()" style="width: 20px; height: 20px;">';
+                     outputDiv.innerHTML = '<img src="loading-gif.gif" id="im" style="width: 30px; height: 30px;">';
+                     outputLabel.innerHTML = "Analyse du message en cours...";
+                     outputLabel.className = "analize";
+                  }, 1500);
+
+                  // Fade out the original message and call getPrediction after delay
+                  setTimeout(() => {
+                     message.style.opacity = 0;
+                     getPrediction();
+                  }, 4500);
+
+            }, 100);
+
+         } else {
+            // For ordinal messages, set the icon and loading without central div animation
+            message.style.opacity = 0;
+            messageReceptacle.innerHTML = '<img src="message-icon-ordinal.png" id="im1" alt="Message"  onclick="inspectMessage()" style="width: 20px; height: 20px;">';
+            outputDiv.innerHTML = '<img src="loading-gif.gif" id="im" style="width: 30px; height: 30px;">';
+            outputLabel.innerHTML = "Analyse du message en cours...";
+            outputLabel.className = "analize";
+
+            setTimeout(() => {
+                  getPrediction();
+            }, 4500);
+         }
+      }
+
+      function inspectMessage() {
+         const observation = lastObservation;
+         const columnNames = [
+                              "Timestamp",       // TS - Time of the message
+                              "Message ID",      // ID1 - Identifier for the message or device
+                              "Length Code",     // DLCO - Data Length Code Overall or length indicator
+                              "Data Segment 1",  // DLC1 - First data segment
+                              "Data Segment 2",  // DLC2 - Second data segment
+                              "Data Segment 3",  // DLC3 - Third data segment
+                              "Data Segment 4",  // DLC4 - Fourth data segment
+                              "Data Segment 5",  // DLC5 - Fifth data segment
+                              "Data Segment 6",  // DLC6 - Sixth data segment
+                              "Data Segment 7",  // DLC7 - Seventh data segment
+                           ];
+         const table = document.getElementById("messageTable");
+         table.innerHTML = ""; // Clear previous data
+
+         // Add header row
+         let headerRow = table.insertRow();
+         columnNames.forEach(name => {
+            let cell = headerRow.insertCell();
+            cell.textContent = name;
+            cell.style.fontWeight = "bold";
+         });
+
+         // Add data row
+         let dataRow = table.insertRow();
+         observation.forEach(data => {
+            let cell = dataRow.insertCell();
+            cell.textContent = data;
+         });
+
+         // Show the modal and overlay
+         document.getElementById("inspectionModal").style.display = "block";
+         document.getElementById("modalOverlay").style.display = "block";
+      }
+
+      function closeModal() {
+         document.getElementById("inspectionModal").style.display = "none";
+         document.getElementById("modalOverlay").style.display = "none";
+      }
+
+
+
+      async function getCustomPrediction(observation) {
+            
+            const outputLabel = document.getElementById('outputLabel');
+            const outputDiv = document.getElementById('outdiv');
+
+            if (observation) {  // Ensure an observation is selected
+                const response = await fetch('http://localhost:5000/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ features: observation })
+                });
+                const result = await response.json();
+                console.log(result.prediction);
+                // Display the output based on result from python server
+
+                //remove the loading GIF
+                outputDiv.removeChild(document.getElementById('im'));
+
+                if (result.prediction) {
+                  if (result.prediction === 'Ordinale message') {
+                     outputLabel.innerHTML = 'Message ordinale recu!';
+                     outputLabel.className = "success"
+
+                  } else {
+                     
+                        outputLabel.innerHTML = `Attaque détecté: ${result.prediction}`;
+                        outputLabel.className = "attack"
+                  } 
+               } else {
+                  if(result.error){
+                         outputLabel.innerHTML = `Error: ${result.error}`;
+                         outputLabel.className = "attack"
+                  }else{
+                     outputLabel.innerHTML = 'Error: On a pas recu la prédiction.';
+                     outputLabel.className = "output-label"
+                  }
+               }
+            } else {
+                outputLabel.textContent = "Vous devez selectionner un type de message.";
+                outputLabel.className = "output-label"; 
+            }
+            lastObservation = observation;
+        }
+
+      // New animation function for custom attack
+      async function animateCustomMessage() {
+         counter += 1;
+         const message = document.getElementById('message');
+         const centralDiv = document.getElementById('centralDiv');
+         const messageReceptacle = document.getElementById('messageReceptacle');
+         const outputLabel = document.getElementById('outputLabel');
+         const outputDiv = document.getElementById('outdiv');
+         const hackerLabel = document.getElementById('hacker-lab');
+
+         message.setAttribute("src", "message-icon-custom.png");
+         outputLabel.innerHTML = '';
+
+         // Remove the previous message icon if it exists
+         if (document.getElementById('im1')) {
+            messageReceptacle.removeChild(document.getElementById('im1'));
+         }
+
+         // Hide the message initially
+         message.style.opacity = '0';
+
+         // Show the hacker preparing attack label
+         hackerLabel.innerHTML = 'Préparation de l\'attaque personnalisée...';
+         hackerLabel.className = "output-label";
+
+         message.style.transform = `translate(${0}px, ${0}px)`;
+         // Wait for a few seconds to simulate preparation
+         await wait(2000);
+
+         hackerLabel.innerHTML = ''; // Clear the hacker label after wait
+         // Use the custom attack data here
+         const customData = customAttackData || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];  // Default if no custom data
+
+         console.log("animate Function recieved the customAttack : ",customAttackData);
+         // Animate the custom message based on customAttackData
+         const centralRect = centralDiv.getBoundingClientRect();
+         const messageRect = message.getBoundingClientRect();
+
+         // Calculate translation distances
+         const translateX = centralRect.left + centralRect.width / 2 - (messageRect.left + messageRect.width / 2);
+         const translateY = centralRect.top + centralRect.height / 2 - (messageRect.top + messageRect.height / 2);
+
+         setTimeout(() => {
+            // Hide the message initially
+            message.style.opacity = '1';
+            message.style.transform = `translate(${translateX}px, ${translateY}px)`;
+
+            setTimeout(() => {
+                  messageReceptacle.innerHTML = '<img src="message-icon-custom.png" id="im1" alt="Message" onclick="inspectMessage()" style="width: 20px; height: 20px;">';
+                  outputDiv.innerHTML = '<img src="loading-gif.gif" id="im" style="width: 30px; height: 30px;">';
+                  outputLabel.innerHTML = "Analyse du message personnalisé en cours...";
+                  outputLabel.className = "analize";
+            }, 1500);
+
+            setTimeout(() => {
+                  message.style.opacity = 0;
+                  getCustomPrediction(customData);  // Pass custom data for prediction
+            }, 4500);
+         }, 100);
+
+         message.innerHTML ='<img src="message-icon-hacked" alt="Message" class="message" id="message">';
+
+      }
+
+      // Function to handle the custom attack input
+      function showCustomAttackInput() {
+         const customAttackDiv = document.getElementById('customAttackInputs');
+         const simulationDiv = document.getElementById('standardAttackForm');
+         simulationDiv.setAttribute("hidden","hidden");
+         customAttackDiv.removeAttribute("hidden");
+         //simulationDiv.style.display = 'none';  // Hide the simulation container
+         //customAttackDiv.style.display = 'block'; // Show the custom attack inputs
+      }
+
+      // Function to submit the custom attack
+      function submitCustomAttack() {
+         const timestamp = document.getElementById('timestamp').value;
+         const id = document.getElementById('id').value;
+         const dlco = document.getElementById('dlco').value;
+         const dlc1 = document.getElementById('dlc1').value;
+         const dlc2 = document.getElementById('dlc2').value;
+         const dlc3 = document.getElementById('dlc3').value;
+         const dlc4 = document.getElementById('dlc4').value;
+         const dlc5 = document.getElementById('dlc5').value;
+         const dlc6 = document.getElementById('dlc6').value;
+         const dlc7 = document.getElementById('dlc7').value;
+
+         // Construct the attack array
+         customAttackData = [parseInt(timestamp), parseInt(id), parseInt(dlco), parseInt(dlc1), parseInt(dlc2), parseInt(dlc3), parseInt(dlc4), parseInt(dlc5), parseInt(dlc6), parseInt(dlc7)];
+         console.log("Custom Attack Data: ", customAttackData);
+
+         // Hide the custom attack inputs and show the simulation container again
+         returnToStandard();
+
+         // Now that customAttackData is set, you can simulate the attack
+         animateCustomMessage(); // Call animateCustomMessage for the custom animation
+      }
+
+      function returnToStandard() {
+         // Hide the custom form and show the standard form
+         document.getElementById("customAttackInputs").setAttribute("hidden","hidden");
+         document.getElementById("standardAttackForm").removeAttribute("hidden");// Show the standard form
+      }
+     </script>
+     
+     </body>
+</html>
